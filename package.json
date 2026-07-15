@@ -181,7 +181,7 @@
     ]
   },
   "dependencies": {
-    "@aws-cdk/service-spec-types": "0.0.260",
+    "@aws-cdk/service-spec-types": "0.0.261",
     "string-width": "^4.2.3",
     "tar": "^7.5.20"
   },

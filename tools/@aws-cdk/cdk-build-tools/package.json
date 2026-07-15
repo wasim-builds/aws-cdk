@@ -57,7 +57,7 @@
     "jsii-rosetta": "~5.9.56",
     "jsii-pacmak": "1.138.0",
     "jsii-reflect": "1.138.0",
-    "markdownlint-cli": "^0.49.0",
+    "markdownlint-cli": "^0.49.1",
     "nyc": "^15.1.0",
     "semver": "^7.8.5",
     "ts-jest": "^29.4.11",
