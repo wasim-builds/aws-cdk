@@ -11,4 +11,10 @@ module.exports = {
   ],
 
   testEnvironment: 'node',
+
+  // Acknowledge test-only CloudFormationValidatePlugin warnings, like every other
+  // aws-cdk-lib-dependent package gets via the cdk-build-tools base jest config.
+  setupFilesAfterEnv: [
+    'aws-cdk-lib/testhelpers/jest-global-app-testhook',
+  ],
 };
