@@ -1604,12 +1604,14 @@ export class TableV2MultiAccountReplica extends TableBaseV2 {
     let sourceRegion = sourceStack.region;
 
     // For imported tables, extract account/region from ARN instead of stack
-    try {
-      const arnParts = this.stack.splitArn(props.replicaSourceTable!.tableArn, ArnFormat.SLASH_RESOURCE_NAME);
-      if (arnParts.account) sourceAccount = arnParts.account;
-      if (arnParts.region) sourceRegion = arnParts.region;
-    } catch {
-      // Ignore splitArn failures on purely tokenized ARNs
+    if (!Token.isUnresolved(props.replicaSourceTable!.tableArn)) {
+      try {
+        const arnParts = this.stack.splitArn(props.replicaSourceTable!.tableArn, ArnFormat.SLASH_RESOURCE_NAME);
+        if (arnParts.account) sourceAccount = arnParts.account;
+        if (arnParts.region) sourceRegion = arnParts.region;
+      } catch {
+        // Ignore splitArn failures on purely tokenized ARNs
+      }
     }
 
     // Validate different account (skip if token)
