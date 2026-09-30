@@ -154,6 +154,10 @@ describe('serverless cluster', () => {
       DeletionPolicy: 'Retain',
       UpdateReplacePolicy: 'Retain',
     });
+
+    Template.fromStack(stack).hasResourceProperties('AWS::RDS::DBCluster', {
+      DeletionProtection: true,
+    });
   });
 
   test('creates a secret when master credentials are not specified', () => {
