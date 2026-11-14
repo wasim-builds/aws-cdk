@@ -1,5 +1,5 @@
 import { Construct } from 'constructs';
-import { Template } from '../../assertions';
+import { Annotations, Match, Template } from '../../assertions';
 import * as cloudwatch from '../../aws-cloudwatch';
 import * as ec2 from '../../aws-ec2';
 import * as elbv2 from '../../aws-elasticloadbalancingv2';
@@ -210,9 +210,71 @@ describe('scaling', () => {
     });
 
     // THEN
+    Annotations.fromStack(stack).hasWarning(
+      '/Action',
+      "'Cooldown' is valid only if the policy type is SimpleScaling. Default to ignore the values set. [ack: @aws-cdk/aws-autoscaling:cooldownOnStepScaling]",
+    );
     expect(() => Template.fromStack(stack).hasResourceProperties('AWS::AutoScaling::ScalingPolicy', {
       CoolDown: undefined,
     })).toThrow(/Template has 1 resources with type AWS::AutoScaling::ScalingPolicy, but none match as expected/);
+  });
+
+  test('setting cooldown on target tracking scaling is ineffective', () => {
+    // GIVEN
+    const stack = new cdk.Stack();
+    const vpc = new ec2.Vpc(stack, 'Vpc');
+    const autoScalingGroup = new autoscaling.AutoScalingGroup(stack, 'ASG', {
+      minCapacity: 1,
+      maxCapacity: 100,
+      instanceType: new ec2.InstanceType('t-1000.macro'),
+      machineImage: new ec2.AmazonLinuxImage(),
+      vpc,
+    });
+    new autoscaling.TargetTrackingScalingPolicy(stack, 'Action', {
+      autoScalingGroup,
+      targetValue: 50,
+      predefinedMetric: autoscaling.PredefinedMetric.ASG_AVERAGE_CPU_UTILIZATION,
+      cooldown: cdk.Duration.days(1),
+    });
+
+    // THEN
+    Annotations.fromStack(stack).hasWarning(
+      '/Action',
+      "'Cooldown' is valid only if the policy type is SimpleScaling. Default to ignore the values set. [ack: @aws-cdk/aws-autoscaling:cooldownOnTargetTrackingScaling]",
+    );
+    Template.fromStack(stack).hasResourceProperties('AWS::AutoScaling::ScalingPolicy', {
+      PolicyType: 'TargetTrackingScaling',
+      Cooldown: Match.absent(),
+    });
+  });
+
+  test('scaleOnCpuUtilization with cooldown emits warning and omits Cooldown property', () => {
+    // GIVEN
+    const stack = new cdk.Stack();
+    const vpc = new ec2.Vpc(stack, 'Vpc');
+    const autoScalingGroup = new autoscaling.AutoScalingGroup(stack, 'ASG', {
+      minCapacity: 1,
+      maxCapacity: 100,
+      instanceType: new ec2.InstanceType('t-1000.macro'),
+      machineImage: new ec2.AmazonLinuxImage(),
+      vpc,
+    });
+
+    // WHEN
+    autoScalingGroup.scaleOnCpuUtilization('Cpu', {
+      targetUtilizationPercent: 50,
+      cooldown: cdk.Duration.minutes(5),
+    });
+
+    // THEN
+    Annotations.fromStack(stack).hasWarning(
+      '/ASG/ScalingPolicyCpu',
+      "'Cooldown' is valid only if the policy type is SimpleScaling. Default to ignore the values set. [ack: @aws-cdk/aws-autoscaling:cooldownOnTargetTrackingScaling]",
+    );
+    Template.fromStack(stack).hasResourceProperties('AWS::AutoScaling::ScalingPolicy', {
+      PolicyType: 'TargetTrackingScaling',
+      Cooldown: Match.absent(),
+    });
   });
 
   test('step scaling', () => {
